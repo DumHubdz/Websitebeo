@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PainXita Hub - Key System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #080c18;
+      color: #e0f0f5;
+      font-family: 'Space Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header {
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(0,212,255,0.5);
+      letter-spacing: 1px;
+    }
+
+    .header p {
+      font-size: 11px;
+      color: #6b8a94;
+      letter-spacing: 4px;
+      margin-top: 6px;
+      text-transform: uppercase;
+    }
+
+    .tasks {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid #1e2a30;
+      background: rgba(15,22,35,0.7);
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .task:hover:not(.locked):not(.done):not(.running) {
+      border-color: rgba(0,212,255,0.35);
+      background: rgba(0,212,255,0.04);
+    }
+
+    .task.locked {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .task.running {
+      border-color: rgba(0,212,255,0.5);
+      background: rgba(0,212,255,0.04);
+      color: #00d4ff;
+    }
+
+    .task.done {
+      border-color: rgba(0,212,255,0.35);
+      background: rgba(0,212,255,0.08);
+      color: #00d4ff;
+      cursor: default;
+    }
+
+    .task-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: #6b8a94;
+    }
+
+    .task.running .task-right { color: #00d4ff; }
+    .task.done .task-right { color: #00d4ff; }
+
+    .progress-bar {
+      width: 60px;
+      height: 5px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #00d4ff;
+      border-radius: 99px;
+      transition: width 1s linear;
+    }
+
+    .check-icon {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,212,255,0.4);
+      background: rgba(0,212,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .check-icon svg { width: 10px; height: 10px; stroke: #00d4ff; }
+
+    .lock-icon svg { width: 14px; height: 14px; stroke: rgba(107,138,148,0.5); }
+
+    /* Progress dots */
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      flex: 1;
+      height: 3px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.08);
+      transition: background 0.5s;
+    }
+
+    .dot.active { background: rgba(0,212,255,0.5); }
+    .dot.done { background: #00d4ff; }
+
+    /* Footer count */
+    .footer-count {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(107,138,148,0.6);
+    }
+
+    /* Get Key button */
+    .btn-getkey {
+      width: 100%;
+      height: 48px;
+      border-radius: 12px;
+      background: #00d4ff;
+      color: #080c18;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 4px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-getkey:hover { background: rgba(0,212,255,0.85); box-shadow: 0 0 30px rgba(0,212,255,0.3); }
+    .btn-getkey:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Key result box */
+    .key-result {
+      border-radius: 12px;
+      border: 1px solid rgba(0,212,255,0.25);
+      background: rgba(15,22,35,0.85);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .key-result::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, #00d4ff, transparent);
+    }
+
+    .key-result-inner { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+
+    .key-label {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: #00d4ff;
+      font-weight: 700;
+    }
+
+    .key-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .key-text {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 700;
+      color: #00d4ff;
+      letter-spacing: 2px;
+      word-break: break-all;
+    }
+
+    .btn-copy {
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.25);
+      color: #00d4ff;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover { background: rgba(0,212,255,0.2); }
+
+    .key-expiry {
+      font-size: 11px;
+      color: #6b8a94;
+      text-align: center;
+    }
+
+    .key-note {
+      font-size: 11px;
+      color: rgba(107,138,148,0.6);
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 12px;
+    }
+
+    .error-msg { font-size: 11px; color: #ef4444; text-align: center; }
+
+    #section-getkey, #section-result { display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>PainXita Hub</h1>
+    <p>Hoan thanh nhiem vu de lay key</p>
+  </div>
+
+  <!-- Tasks -->
+  <div class="tasks" id="taskList"></div>
+
+  <!-- Progress dots -->
+  <div class="dots" id="dots"></div>
+
+  <!-- Footer count -->
+  <div class="footer-count" id="footerCount">0 / 6 nhiem vu hoan thanh</div>
+
+  <!-- Get Key -->
+  <div id="section-getkey">
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="btn-getkey" id="btnGetKey" onclick="getKey()">LAY KEY</button>
+  </div>
+
+  <!-- Key Result -->
+  <div class="key-result" id="section-result">
+    <div class="key-result-inner">
+      <div class="key-label">KEY DA DUOC TAO</div>
+      <div class="key-box">
+        <span class="key-text" id="keyText"></span>
+        <button class="btn-copy" id="btnCopy" onclick="copyKey()">COPY</button>
+      </div>
+      <div class="key-expiry" id="keyExpiry"></div>
+      <div class="key-note">Dan key nay vao script Roblox. Key reset sau 24h.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const TASKS = [
+    { id: 1, label: "Nhiem vu 1", duration: 10 },
+    { id: 2, label: "Nhiem vu 2", duration: 15 },
+    { id: 3, label: "Nhiem vu 3", duration: 20 },
+    { id: 4, label: "Nhiem vu 4", duration: 30 },
+    { id: 5, label: "Nhiem vu 5", duration: 40 },
+    { id: 6, label: "Nhiem vu 6", duration: 50 },
+  ];
+
+  // Thay bằng domain của bạn sau khi Publish
+  const API_BASE = "";
+
+  let states = TASKS.map(() => "idle"); // idle | running | done
+  let activeTask = null;
+  let timer = null;
+
+  function render() {
+    const list = document.getElementById("taskList");
+    const dots = document.getElementById("dots");
+    const footer = document.getElementById("footerCount");
+    const doneCount = states.filter(s => s === "done").length;
+    const allDone = doneCount === TASKS.length;
+
+    list.innerHTML = "";
+    dots.innerHTML = "";
+
+    TASKS.forEach((task, i) => {
+      const state = states[i];
+      const isLocked = i > 0 && states[i-1] !== "done";
+      const isClickable = state === "idle" && !isLocked && activeTask === null;
+
+      // Task button
+      const btn = document.createElement("div");
+      btn.className = "task" + (state === "done" ? " done" : state === "running" ? " running" : isLocked ? " locked" : "");
+      if (isClickable) btn.onclick = () => startTask(i);
+
+      let rightHTML = "";
+      if (state === "done") {
+        rightHTML = `<span>XONG</span>
+          <div class="check-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>`;
+      } else if (state === "running") {
+        const pct = (activeCountdown / task.duration) * 100;
+        rightHTML = `<span id="countdown-${i}">${activeCountdown}s</span>
+          <div class="progress-bar">
+            <div class="progress-fill" id="bar-${i}" style="width:${pct}%"></div>
+          </div>`;
+      } else if (isLocked) {
+        rightHTML = `<span>${task.duration}s</span>
+          <div class="lock-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>`;
+      } else {
+        rightHTML = `<span>${task.duration}s</span>`;
+      }
+
+      btn.innerHTML = `<span>${task.label}</span><div class="task-right">${rightHTML}</div>`;
+      list.appendChild(btn);
+
+      // Dot
+      const dot = document.createElement("div");
+      dot.className = "dot" + (state === "done" ? " done" : state === "running" ? " active" : "");
+      dots.appendChild(dot);
+    });
+
+    footer.textContent = `${doneCount} / ${TASKS.length} nhiem vu hoan thanh`;
+    footer.style.display = allDone ? "none" : "block";
+
+    document.getElementById("section-getkey").style.display = allDone && !document.getElementById("keyText").textContent ? "block" : "none";
+  }
+
+  let activeCountdown = 0;
+
+  function startTask(index) {
+    if (states[index] !== "idle") return;
+    if (index > 0 && states[index-1] !== "done") return;
+    if (activeTask !== null) return;
+
+    activeTask = index;
+    activeCountdown = TASKS[index].duration;
+    states[index] = "running";
+    render();
+
+    timer = setInterval(() => {
+      activeCountdown--;
+
+      // Update countdown text and bar inline
+      const cdEl = document.getElementById(`countdown-${index}`);
+      const barEl = document.getElementById(`bar-${index}`);
+      if (cdEl) cdEl.textContent = activeCountdown + "s";
+      if (barEl) barEl.style.width = ((activeCountdown / TASKS[index].duration) * 100) + "%";
+
+      if (activeCountdown <= 0) {
+        clearInterval(timer);
+        states[index] = "done";
+        activeTask = null;
+        render();
+      }
+    }, 1000);
+  }
+
+  async function getKey() {
+    const btn = document.getElementById("btnGetKey");
+    const err = document.getElementById("errorMsg");
+    btn.disabled = true;
+    btn.textContent = "DANG TAO KEY...";
+    err.textContent = "";
+
+    try {
+      const res = await fetch(API_BASE + "/api/keys/claim", { method: "POST" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+
+      document.getElementById("keyText").textContent = data.key;
+      if (data.expiresAt) {
+        const d = new Date(data.expiresAt);
+        document.getElementById("keyExpiry").textContent = "Het han: " + d.toLocaleString("vi-VN");
+      }
+      document.getElementById("section-getkey").style.display = "none";
+      document.getElementById("section-result").style.display = "block";
+    } catch {
+      err.textContent = "Khong the tao key. Thu lai sau.";
+      btn.disabled = false;
+      btn.textContent = "LAY KEY";
+    }
+  }
+
+  function copyKey() {
+    const key = document.getElementById("keyText").textContent;
+    navigator.clipboard.writeText(key);
+    const btn = document.getElementById("btnCopy");
+    btn.textContent = "DA COPY!";
+    setTimeout(() => btn.textContent = "COPY", 2000);
+  }
+
+  render();
+</script>
+</body>
+</html>
